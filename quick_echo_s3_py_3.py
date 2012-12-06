@@ -3,33 +3,40 @@ from pprint import pprint
 from s3_helpers import *
 
 def main(args):
+	expected_params = "Expected parametes: access_key [secret_key|decrypt:encypted_key] local_dir remote_bucket_and_prefix exclude cache_file [storage class] [access level acl] \r\n Or encrypt:secret_key to create an password encrypted secret key."
+	if len(args) < 1:
+		log(expected_params)
+		exit(-1)
+	
+	enc_prefix = 'encrypt:'
+	secret_key = args[0]
+	if secret_key.startswith(enc_prefix):
+		log('Password to encrypt AWS secret key:')
+		password = getpass('')			
+		secret_key = encrypt_secret_key(password, secret_key[len(enc_prefix):])
+		log('Key Encrypted as: ' + secret_key)
+		log('Run again with decrypt:[encrypted secret key (above)] in place of the secret key.')
+		exit(-1)
+		
 	if len(args) < 6:
-		log("Expected parametes: access_key [secret_key|decrypt:encypted_key|encrypt:secret_key] local_dir remote_bucket_and_prefix exclude cache_file [storage class] [access level acl]")
+		log(expected_params)
 		exit(-1)
 	else:
 		access_key = args[0]
 		secret_key = args[1]
 
-		dec_prefix = 'decrypt:'
-		enc_prefix = 'encrypt:'
+		dec_prefix = 'decrypt:'		
 		if secret_key.startswith(dec_prefix):
 			log('Password to access AWS:')
 			password = getpass('')			
 			secret_key = decrypt_secret_key(password, secret_key[len(dec_prefix):])
-		elif secret_key.startswith(enc_prefix):
-			log('Password to encrypt AWS secret key:')
-			password = getpass('')			
-			secret_key = encrypt_secret_key(password, secret_key[len(enc_prefix):])
-			log('Key Encrypted as: ' + secret_key)
-			log('Run again with dcrypted:[encrypted secret key (above)] to sync to S3.')
-			exit(-1)
 
 		local_dir = args[2]
 		remote = args[3]
 		exclude = args[4]
 		cache_file = args[5]
 		
-	storage_class = 'REDUCED_REDUNDANCY'
+	storage_class = 'STANDARD'
 	try:
 		storage_class = args[6]
 	except:
